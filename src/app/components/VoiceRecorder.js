@@ -12,7 +12,7 @@ export default function VoiceRecorder() {
 	const [recognition, setRecognition] = useState(null);
 	const [error, setError] = useState("");
 	const [retryCount, setRetryCount] = useState(0);
-	const WORD_BATCH_SIZE = 10;
+	const WORD_BATCH_SIZE = 15;
 	const MAX_RETRIES = 3;
 
 	useEffect(() => {
@@ -58,6 +58,7 @@ export default function VoiceRecorder() {
 					text: "No claims to verify.",
 				},
 				categories: categories,
+				mentions: Array.isArray(data.mentions) ? data.mentions : [],
 			};
 		} catch (error) {
 			console.error("Error processing text:", error);
@@ -68,6 +69,7 @@ export default function VoiceRecorder() {
 					text: "Unable to fact-check this text.",
 				},
 				categories: [],
+				mentions: [],
 			};
 		}
 	};
@@ -80,34 +82,50 @@ export default function VoiceRecorder() {
 
 	// Modified useEffect to handle transcript processing
 	useEffect(() => {
-		console.log("pendingBatches", pendingBatches);
-		const processBatch = async () => {
-			if (pendingBatches.length === 0) return;
+		const processBatches = async () => {
+			// Process all pending batches concurrently
+			const batchPromises = pendingBatches.map(async (text) => {
+				if (!processedText.has(text)) {
+					setProcessedText((prev) => new Set(prev).add(text));
+					return await summarizeText(text);
+				}
+				return null;
+			});
 
-			const text = pendingBatches[0];
+			try {
+				const results = await Promise.all(batchPromises);
 
-			// Move the processed text check outside of the async function
-			if (!processedText.has(text)) {
-				setProcessedText((prev) => new Set(prev).add(text)); // Mark as processed before async call
-				const result = await summarizeText(text);
-				setTranscriptPairs((prev) => [
-					...prev,
-					{
-						transcript: text,
-						factCheck: result.factCheck,
-						categories: result.categories,
-					},
-				]);
-				// Only clear currentTranscript after processing if it matches the processed batch
-				setCurrentTranscript((current) =>
-					current === text ? "" : current
-				);
+				// Filter out null results and update transcriptPairs
+				const validResults = results.filter((result, index) => {
+					return (
+						result !== null &&
+						!processedText.has(pendingBatches[index])
+					);
+				});
+
+				if (validResults.length > 0) {
+					setTranscriptPairs((prev) => [
+						...validResults.map((result, index) => ({
+							transcript: pendingBatches[index],
+							factCheck: result.factCheck,
+							categories: result.categories,
+							mentions: result.mentions,
+						})),
+						...prev,
+					]);
+				}
+
+				// Clear all processed batches
+				setPendingBatches([]);
+			} catch (error) {
+				console.error("Error processing batches:", error);
+				setError("Error processing speech batches");
 			}
-
-			setPendingBatches((prev) => prev.slice(1));
 		};
 
-		processBatch();
+		if (pendingBatches.length > 0) {
+			processBatches();
+		}
 	}, [pendingBatches]); // Remove processedText from dependencies
 
 	const initializeRecognition = () => {
@@ -146,14 +164,17 @@ export default function VoiceRecorder() {
 					interimTranscript
 				).trim();
 				const wordCount = updatedTranscript.split(/\s+/).length;
+				console.log("wordCount", wordCount);
 
-				if (wordCount >= WORD_BATCH_SIZE && finalTranscript) {
-					// Only create a batch when we have final transcript and enough words
+				// If we have enough words, process the batch immediately
+				if (wordCount >= WORD_BATCH_SIZE) {
 					addTranscriptBatch(updatedTranscript);
-					finalTranscriptBuffer = "";
-					return updatedTranscript; // Return the transcript instead of empty string
+					finalTranscriptBuffer = ""; // Reset the buffer
+					// Start new transcript with any remaining interim results
+					return interimTranscript;
 				}
 
+				// If we have final transcript but not enough words yet, add to buffer
 				if (finalTranscript) {
 					finalTranscriptBuffer += finalTranscript;
 				}
@@ -269,59 +290,10 @@ export default function VoiceRecorder() {
 					<div className={styles.headerCell}>Transcripts</div>
 					<div className={styles.headerCell}>Fact Check</div>
 					<div className={styles.headerCell}>Categories</div>
+					<div className={styles.headerCell}>Mentions</div>
 				</div>
 
 				<div>
-					{transcriptPairs.map((pair, index) => (
-						<div key={index} className={styles.row}>
-							<div className={styles.cell}>
-								<div className={styles.currentTranscript}>
-									{pair.transcript}
-								</div>
-							</div>
-							<div className={styles.cell}>
-								<div className={styles.factCheckResult}>
-									<div className={styles.factCheckStatus}>
-										<span
-											className={
-												pair.factCheck.factCheck
-													? styles.factCheckTrue
-													: styles.factCheckFalse
-											}
-										>
-											{pair.factCheck.factCheck
-												? "No Issues Found"
-												: "Needs Correction"}
-										</span>
-									</div>
-									<div className={styles.factCheckText}>
-										{pair.factCheck.factCheck
-											? "No claims require verification."
-											: pair.factCheck.text}
-									</div>
-								</div>
-							</div>
-							<div className={styles.cell}>
-								<div className={styles.categories}>
-									{pair.categories.length > 0 ? (
-										pair.categories.map((category, i) => (
-											<span
-												key={i}
-												className={styles.category}
-											>
-												{category}
-											</span>
-										))
-									) : (
-										<span className={styles.noCategories}>
-											No categories
-										</span>
-									)}
-								</div>
-							</div>
-						</div>
-					))}
-
 					{currentTranscript && (
 						<div className={styles.row}>
 							<div className={styles.cell}>
@@ -376,6 +348,84 @@ export default function VoiceRecorder() {
 							</div>
 						</div>
 					)}
+
+					{transcriptPairs.map((pair, index) => (
+						<div key={index} className={styles.row}>
+							<div className={styles.cell}>{pair.transcript}</div>
+							<div className={styles.cell}>
+								<div className={styles.factCheckResult}>
+									<div className={styles.factCheckStatus}>
+										<span
+											className={
+												pair.factCheck.factCheck
+													? styles.factCheckTrue
+													: styles.factCheckFalse
+											}
+										>
+											{pair.factCheck.factCheck
+												? "No Issues Found"
+												: "Needs Correction"}
+										</span>
+									</div>
+									<div className={styles.factCheckText}>
+										{pair.factCheck.factCheck
+											? "No claims require verification."
+											: pair.factCheck.text}
+									</div>
+								</div>
+							</div>
+							<div className={styles.cell}>
+								<div className={styles.categories}>
+									{pair.categories.length > 0 ? (
+										pair.categories.map((category, i) => (
+											<span
+												key={i}
+												className={styles.category}
+											>
+												{category}
+											</span>
+										))
+									) : (
+										<span className={styles.noCategories}>
+											No categories
+										</span>
+									)}
+								</div>
+							</div>
+							<div className={styles.cell}>
+								<div className={styles.mentions}>
+									{pair.mentions &&
+									pair.mentions.length > 0 ? (
+										pair.mentions.map((mention, i) => (
+											<div
+												key={i}
+												className={styles.mention}
+											>
+												<span
+													className={
+														styles.mentionType
+													}
+												>
+													{mention.type}:
+												</span>
+												<span
+													className={
+														styles.mentionQuery
+													}
+												>
+													{mention.searchQuery}
+												</span>
+											</div>
+										))
+									) : (
+										<span className={styles.noMentions}>
+											No mentions detected
+										</span>
+									)}
+								</div>
+							</div>
+						</div>
+					))}
 				</div>
 			</div>
 		</div>

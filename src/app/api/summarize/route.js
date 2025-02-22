@@ -25,6 +25,7 @@ export async function POST(request) {
 					content: `You are a fact-checking and categorization assistant. Analyze the given text and return a JSON object with:
 					1. Fact check results including whether any claims need correction
 					2. Up to 5 relevant categories for the content
+					3. Detect any mentions of online videos, products, celebrities, or current events
 					
 					Return your response in this exact JSON format:
 					{
@@ -32,12 +33,18 @@ export async function POST(request) {
 							"factCheck": boolean,
 							"text": "explanation of any corrections needed or confirmation no claims need verification"
 						},
-						"categories": ["category1", "category2", ...]
+						"categories": ["category1", "category2", ...],
+						"mentions": [
+							{
+								"type": "video"|"product"|"celebrity"|"current_event",
+								"searchQuery": "search engine friendly description or name"
+							}
+						]
 					}`,
 				},
 				{
 					role: "user",
-					content: `Analyze this text and provide fact check and categories:\n\n${text}`,
+					content: `Analyze this text and provide fact check, categories, and mentions:\n\n${text}`,
 				},
 			],
 			response_format: { type: "json_object" },
