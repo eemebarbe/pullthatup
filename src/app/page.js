@@ -6,7 +6,6 @@ export default function Home() {
 	return (
 		<div className={styles.page}>
 			<main>
-				<h1 className={styles.title}>AI Voice Fact Checker</h1>
 				<VoiceRecorder />
 			</main>
 		</div>

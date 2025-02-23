@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./VoiceRecorder.module.css";
+import ResultsGrid from "./ResultsGrid";
 
 export default function VoiceRecorder() {
 	const [isRecording, setIsRecording] = useState(false);
@@ -14,6 +15,7 @@ export default function VoiceRecorder() {
 	const [retryCount, setRetryCount] = useState(0);
 	const WORD_BATCH_SIZE = 15;
 	const MAX_RETRIES = 3;
+	const [activeTab, setActiveTab] = useState("transcript");
 
 	useEffect(() => {
 		return () => {
@@ -267,14 +269,17 @@ export default function VoiceRecorder() {
 
 	return (
 		<div className={styles.container}>
-			<button
-				onClick={isRecording ? stopRecording : startRecording}
-				className={`${styles.recordButton} ${
-					isRecording ? styles.recording : styles.notRecording
-				}`}
-			>
-				{isRecording ? "Stop Recording" : "Start Recording"}
-			</button>
+			<div className={styles.headerRow}>
+				<h1 className={styles.title}>Pull That Up</h1>
+				<button
+					onClick={isRecording ? stopRecording : startRecording}
+					className={`${styles.recordButton} ${
+						isRecording ? styles.recording : styles.notRecording
+					}`}
+				>
+					{isRecording ? "Stop Recording" : "Start Recording"}
+				</button>
+			</div>
 
 			{error && <div className={styles.error}>{error}</div>}
 
@@ -285,149 +290,180 @@ export default function VoiceRecorder() {
 				</div>
 			)}
 
-			<div className={styles.grid}>
-				<div className={styles.headers}>
-					<div className={styles.headerCell}>Transcripts</div>
-					<div className={styles.headerCell}>Fact Check</div>
-					<div className={styles.headerCell}>Categories</div>
-					<div className={styles.headerCell}>Mentions</div>
-				</div>
-
-				<div>
-					{currentTranscript && (
-						<div className={styles.row}>
-							<div className={styles.cell}>
-								<div className={styles.currentTranscript}>
-									{currentTranscript}
-									<div className={styles.wordCount}>
-										<div
-											className={
-												styles.recordingIndicator
-											}
-										/>
-										Words:{" "}
-										{
-											currentTranscript
-												.trim()
-												.split(/\s+/).length
-										}{" "}
-										/ {WORD_BATCH_SIZE}
-									</div>
-								</div>
-							</div>
-							<div className={styles.cell}>
-								<div className={styles.waitingStatus}>
-									<svg
-										className={styles.spinner}
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-									>
-										<circle
-											className="opacity-25"
-											cx="12"
-											cy="12"
-											r="10"
-											stroke="currentColor"
-											strokeWidth="4"
-											fill="none"
-										/>
-										<path
-											className="opacity-75"
-											fill="currentColor"
-											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-										/>
-									</svg>
-									Analyzing...
-								</div>
-							</div>
-							<div className={styles.cell}>
-								<div className={styles.waitingStatus}>
-									Waiting for analysis...
-								</div>
-							</div>
-						</div>
-					)}
-
-					{transcriptPairs.map((pair, index) => (
-						<div key={index} className={styles.row}>
-							<div className={styles.cell}>{pair.transcript}</div>
-							<div className={styles.cell}>
-								<div className={styles.factCheckResult}>
-									<div className={styles.factCheckStatus}>
-										<span
-											className={
-												pair.factCheck.factCheck
-													? styles.factCheckTrue
-													: styles.factCheckFalse
-											}
-										>
-											{pair.factCheck.factCheck
-												? "No Issues Found"
-												: "Needs Correction"}
-										</span>
-									</div>
-									<div className={styles.factCheckText}>
-										{pair.factCheck.factCheck
-											? "No claims require verification."
-											: pair.factCheck.text}
-									</div>
-								</div>
-							</div>
-							<div className={styles.cell}>
-								<div className={styles.categories}>
-									{pair.categories.length > 0 ? (
-										pair.categories.map((category, i) => (
-											<span
-												key={i}
-												className={styles.category}
-											>
-												{category}
-											</span>
-										))
-									) : (
-										<span className={styles.noCategories}>
-											No categories
-										</span>
-									)}
-								</div>
-							</div>
-							<div className={styles.cell}>
-								<div className={styles.mentions}>
-									{pair.mentions &&
-									pair.mentions.length > 0 ? (
-										pair.mentions.map((mention, i) => (
-											<div
-												key={i}
-												className={styles.mention}
-											>
-												<span
-													className={
-														styles.mentionType
-													}
-												>
-													{mention.type}:
-												</span>
-												<span
-													className={
-														styles.mentionQuery
-													}
-												>
-													{mention.searchQuery}
-												</span>
-											</div>
-										))
-									) : (
-										<span className={styles.noMentions}>
-											No mentions detected
-										</span>
-									)}
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
+			<div className={styles.tabContainer}>
+				<button
+					className={`${styles.tabButton} ${
+						activeTab === "transcript" ? styles.activeTab : ""
+					}`}
+					onClick={() => setActiveTab("transcript")}
+				>
+					Transcript
+				</button>
+				<button
+					className={`${styles.tabButton} ${
+						activeTab === "grid" ? styles.activeTab : ""
+					}`}
+					onClick={() => setActiveTab("grid")}
+				>
+					Results Grid
+				</button>
 			</div>
+
+			{activeTab === "transcript" ? (
+				<div className={styles.grid}>
+					<div className={styles.headers}>
+						<div className={styles.headerCell}>Transcripts</div>
+						<div className={styles.headerCell}>Fact Check</div>
+						<div className={styles.headerCell}>Categories</div>
+						<div className={styles.headerCell}>Mentions</div>
+					</div>
+
+					<div>
+						{currentTranscript && (
+							<div className={styles.row}>
+								<div className={styles.cell}>
+									<div className={styles.currentTranscript}>
+										{currentTranscript}
+										<div className={styles.wordCount}>
+											<div
+												className={
+													styles.recordingIndicator
+												}
+											/>
+											Words:{" "}
+											{
+												currentTranscript
+													.trim()
+													.split(/\s+/).length
+											}{" "}
+											/ {WORD_BATCH_SIZE}
+										</div>
+									</div>
+								</div>
+								<div className={styles.cell}>
+									<div className={styles.waitingStatus}>
+										<svg
+											className={styles.spinner}
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												className="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												strokeWidth="4"
+												fill="none"
+											/>
+											<path
+												className="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											/>
+										</svg>
+										Analyzing...
+									</div>
+								</div>
+								<div className={styles.cell}>
+									<div className={styles.waitingStatus}>
+										Waiting for analysis...
+									</div>
+								</div>
+							</div>
+						)}
+
+						{transcriptPairs.map((pair, index) => (
+							<div key={index} className={styles.row}>
+								<div className={styles.cell}>
+									{pair.transcript}
+								</div>
+								<div className={styles.cell}>
+									<div className={styles.factCheckResult}>
+										<div className={styles.factCheckStatus}>
+											<span
+												className={
+													pair.factCheck.factCheck
+														? styles.factCheckTrue
+														: styles.factCheckFalse
+												}
+											>
+												{pair.factCheck.factCheck
+													? "No Issues Found"
+													: "Needs Correction"}
+											</span>
+										</div>
+										<div className={styles.factCheckText}>
+											{pair.factCheck.factCheck
+												? "No claims require verification."
+												: pair.factCheck.text}
+										</div>
+									</div>
+								</div>
+								<div className={styles.cell}>
+									<div className={styles.categories}>
+										{pair.categories.length > 0 ? (
+											pair.categories.map(
+												(category, i) => (
+													<span
+														key={i}
+														className={
+															styles.category
+														}
+													>
+														{category}
+													</span>
+												)
+											)
+										) : (
+											<span
+												className={styles.noCategories}
+											>
+												No categories
+											</span>
+										)}
+									</div>
+								</div>
+								<div className={styles.cell}>
+									<div className={styles.mentions}>
+										{pair.mentions &&
+										pair.mentions.length > 0 ? (
+											pair.mentions.map((mention, i) => (
+												<div
+													key={i}
+													className={styles.mention}
+												>
+													<span
+														className={
+															styles.mentionType
+														}
+													>
+														{mention.type}:
+													</span>
+													<span
+														className={
+															styles.mentionQuery
+														}
+													>
+														{mention.searchQuery}
+													</span>
+												</div>
+											))
+										) : (
+											<span className={styles.noMentions}>
+												No mentions detected
+											</span>
+										)}
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			) : (
+				<ResultsGrid latestBatch={transcriptPairs[0]} />
+			)}
 		</div>
 	);
 }

@@ -4,11 +4,16 @@
 	padding: 0 20px;
 }
 
+.title {
+	margin: 0;
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #111827;
+}
+
 .recordButton {
-	display: block;
-	margin: 0 auto 2rem;
-	padding: 1rem 2rem;
-	font-size: 1.2rem;
+	padding: 0.75rem 1.5rem;
+	font-size: 1rem;
 	font-weight: 600;
 	border-radius: 9999px;
 	border: none;
@@ -40,8 +45,8 @@
 }
 
 .error {
-	margin-bottom: 1.5rem;
-	padding: 1rem;
+	margin-bottom: 1rem;
+	padding: 0.75rem;
 	border-radius: 0.5rem;
 	border: 1px solid #fecaca;
 	background-color: #fee2e2;
@@ -49,8 +54,8 @@
 }
 
 .recordingStatus {
-	margin-bottom: 1.5rem;
-	padding: 1rem;
+	margin-bottom: 1rem;
+	padding: 0.75rem;
 	border-radius: 0.5rem;
 	border: 1px solid #bbf7d0;
 	background-color: #dcfce7;
@@ -166,6 +171,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0.75rem;
+	color: #111827;
 }
 
 .factCheckStatus {
@@ -176,17 +182,19 @@
 }
 
 .factCheckTrue {
-	color: #16a34a;
+	color: #15803d;
+	font-weight: 700;
 }
 
 .factCheckFalse {
-	color: #dc2626;
+	color: #b91c1c;
+	font-weight: 700;
 }
 
 .factCheckText {
 	font-size: 0.95rem;
 	line-height: 1.5;
-	color: #4b5563;
+	color: #111827;
 }
 
 .categories {
@@ -246,4 +254,47 @@
 .noMentions {
 	color: #666;
 	font-style: italic;
+}
+
+.tabContainer {
+	display: flex;
+	gap: 1rem;
+	margin: 0.5rem 0;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.tabButton {
+	padding: 0.5rem 1rem;
+	border: none;
+	background: none;
+	cursor: pointer;
+	font-size: 1rem;
+	color: #666;
+	position: relative;
+}
+
+.tabButton.activeTab {
+	color: #000;
+}
+
+.tabButton.activeTab::after {
+	content: "";
+	position: absolute;
+	bottom: -1px;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background-color: #000;
+}
+
+.tabButton:hover {
+	color: #000;
+}
+
+/* Add new class for the header row */
+.headerRow {
+	display: flex;
+	justify-content: space-between;
+	align-items: center; /* This centers items vertically */
+	margin-bottom: 1.5rem; /* Add space below the header */
 }
