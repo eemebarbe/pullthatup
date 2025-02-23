@@ -353,6 +353,7 @@ export default function ResultsGrid({
 						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() => setActiveModal("factCheck")}
 					>
+						<div className={styles.squareNumber}>1</div>
 						<div className={styles.factCheckSquare}>
 							<h3>Fact Check</h3>
 							<div
@@ -384,6 +385,7 @@ export default function ResultsGrid({
 						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() => videoData && setActiveModal("video")}
 					>
+						<div className={styles.squareNumber}>2</div>
 						{renderVideoSquare() || (
 							<div
 								className={`${styles.loadingSquare} ${styles.video} ${styles.animate}`}
@@ -404,6 +406,7 @@ export default function ResultsGrid({
 							searchResults && setActiveModal("search")
 						}
 					>
+						<div className={styles.squareNumber}>3</div>
 						{renderSearchSquare() || (
 							<div
 								className={`${styles.loadingSquare} ${styles.search} ${styles.animate}`}
@@ -429,6 +432,7 @@ export default function ResultsGrid({
 							setActiveModal("celebrity-images")
 						}
 					>
+						<div className={styles.squareNumber}>4</div>
 						{renderImageSquare("celebrity") || (
 							<div
 								className={`${styles.loadingSquare} ${styles.image} ${styles.animate}`}
@@ -454,6 +458,7 @@ export default function ResultsGrid({
 							setActiveModal("product-images")
 						}
 					>
+						<div className={styles.squareNumber}>5</div>
 						{renderImageSquare("product") || (
 							<div
 								className={`${styles.loadingSquare} ${styles.image} ${styles.animate}`}
@@ -468,11 +473,14 @@ export default function ResultsGrid({
 		// Fill remaining squares (up to 6 total)
 		const emptySquaresNeeded = 6 - squares.length;
 		for (let i = 0; i < emptySquaresNeeded; i++) {
+			const squareNumber = squares.length + i + 1;
 			squares.push(
 				<div
 					key={`empty-${i}`}
 					className={`${styles.gridSquare} ${styles.animate}`}
-				/>
+				>
+					<div className={styles.squareNumber}>{squareNumber}</div>
+				</div>
 			);
 		}
 
@@ -516,7 +524,10 @@ export default function ResultsGrid({
 							className={`${styles.recordingButton} ${
 								isRecording ? styles.recording : ""
 							}`}
-							onClick={() => onRecordingToggle(!isRecording)}
+							onClick={() => {
+								// Call the parent's recording toggle function
+								onRecordingToggle();
+							}}
 						>
 							<div className={styles.recordingIcon} />
 							{isRecording ? "Stop Recording" : "Start Recording"}
