@@ -263,38 +263,6 @@ export default function ResultsGrid({ latestBatch }) {
 	};
 
 	const renderVideoSquare = () => {
-		const hasVideoMention = latestBatch?.mentions?.some(
-			(m) => m.type.toLowerCase() === "video"
-		);
-
-		if (isLoading && hasVideoMention) {
-			return (
-				<div className={styles.loadingSquare}>
-					<svg
-						className={styles.loadingSpinner}
-						viewBox="0 0 24 24"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<circle
-							className="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							strokeWidth="4"
-						/>
-						<path
-							className="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						/>
-					</svg>
-					<span>Loading video data...</span>
-				</div>
-			);
-		}
-
 		if (videoData) {
 			return (
 				<div className={styles.videoSquare}>
@@ -303,39 +271,10 @@ export default function ResultsGrid({ latestBatch }) {
 				</div>
 			);
 		}
-
 		return null;
 	};
 
 	const renderSearchSquare = () => {
-		if (isSearchLoading) {
-			return (
-				<div className={styles.loadingSquare}>
-					<svg
-						className={styles.loadingSpinner}
-						viewBox="0 0 24 24"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<circle
-							className="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							strokeWidth="4"
-						/>
-						<path
-							className="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						/>
-					</svg>
-					<span>Loading search results...</span>
-				</div>
-			);
-		}
-
 		if (searchResults?.organic_results?.length > 0) {
 			const topResult = searchResults.organic_results[0];
 			return (
@@ -360,39 +299,10 @@ export default function ResultsGrid({ latestBatch }) {
 				</div>
 			);
 		}
-
 		return null;
 	};
 
 	const renderImageSquare = (type) => {
-		if (isImageLoading) {
-			return (
-				<div className={styles.loadingSquare}>
-					<svg
-						className={styles.loadingSpinner}
-						viewBox="0 0 24 24"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<circle
-							className="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							strokeWidth="4"
-						/>
-						<path
-							className="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						/>
-					</svg>
-					<span>Loading images...</span>
-				</div>
-			);
-		}
-
 		const results = imageResults?.[type] || [];
 		if (results.length > 0) {
 			const topImage = results[0];
@@ -404,7 +314,6 @@ export default function ResultsGrid({ latestBatch }) {
 				/>
 			);
 		}
-
 		return null;
 	};
 
@@ -412,83 +321,126 @@ export default function ResultsGrid({ latestBatch }) {
 	const renderGridSquares = () => {
 		const squares = [];
 
-		// Only add fact check if it exists
-		if (latestBatch?.factCheck) {
-			squares.push(
-				<div
-					key="factCheck"
-					className={`${styles.gridSquare} ${styles.clickable}`}
-					onClick={() => setActiveModal("factCheck")}
-				>
-					<div className={styles.factCheckSquare}>
-						<h3>Fact Check</h3>
-						<div
-							className={`${styles.status} ${
-								latestBatch.factCheck.factCheck
-									? styles.true
-									: styles.false
-							}`}
-						>
-							{latestBatch.factCheck.factCheck
-								? "✓ Verified"
-								: "⚠ Needs Review"}
+		// Create squares for expected content based on latestBatch
+		if (latestBatch) {
+			// Add fact check square if it exists
+			if (latestBatch.factCheck) {
+				squares.push(
+					<div
+						key="factCheck"
+						className={`${styles.gridSquare} ${styles.clickable}`}
+						onClick={() => setActiveModal("factCheck")}
+					>
+						<div className={styles.factCheckSquare}>
+							<h3>Fact Check</h3>
+							<div
+								className={`${styles.status} ${
+									latestBatch.factCheck.factCheck
+										? styles.true
+										: styles.false
+								}`}
+							>
+								{latestBatch.factCheck.factCheck
+									? "✓ Verified"
+									: "⚠ Needs Review"}
+							</div>
+							<p>{latestBatch.factCheck.text}</p>
 						</div>
-						<p>{latestBatch.factCheck.text}</p>
 					</div>
-				</div>
-			);
-		}
+				);
+			}
 
-		// Only add video if it exists
-		if (videoData) {
-			squares.push(
-				<div
-					key="video"
-					className={`${styles.gridSquare} ${styles.clickable}`}
-					onClick={() => setActiveModal("video")}
-				>
-					{renderVideoSquare()}
-				</div>
-			);
-		}
+			// Add video square if there's a video mention
+			if (
+				latestBatch.mentions?.some(
+					(m) => m.type.toLowerCase() === "video"
+				)
+			) {
+				squares.push(
+					<div
+						key="video"
+						className={`${styles.gridSquare} ${styles.clickable}`}
+						onClick={() => videoData && setActiveModal("video")}
+					>
+						{renderVideoSquare() || (
+							<div
+								className={`${styles.loadingSquare} ${styles.video}`}
+								data-loading-text="Loading video..."
+							/>
+						)}
+					</div>
+				);
+			}
 
-		// Only add search if it has results
-		if (searchResults?.organic_results?.length > 0) {
-			squares.push(
-				<div
-					key="search"
-					className={`${styles.gridSquare} ${styles.clickable}`}
-					onClick={() => setActiveModal("search")}
-				>
-					{renderSearchSquare()}
-				</div>
-			);
-		}
+			// Add search square if there's a transcript
+			if (latestBatch.transcript) {
+				squares.push(
+					<div
+						key="search"
+						className={`${styles.gridSquare} ${styles.clickable}`}
+						onClick={() =>
+							searchResults && setActiveModal("search")
+						}
+					>
+						{renderSearchSquare() || (
+							<div
+								className={`${styles.loadingSquare} ${styles.search}`}
+								data-loading-text="Loading search results..."
+							/>
+						)}
+					</div>
+				);
+			}
 
-		// Add celebrity images if available
-		if (imageResults?.celebrity?.length > 0) {
-			squares.push(
-				<div
-					key="celebrity-images"
-					className={`${styles.gridSquare} ${styles.clickable}`}
-					onClick={() => setActiveModal("celebrity-images")}
-				>
-					{renderImageSquare("celebrity")}
-				</div>
-			);
-		}
+			// Add celebrity image square if there's a celebrity mention
+			if (
+				latestBatch.mentions?.some(
+					(m) => m.type.toLowerCase() === "celebrity"
+				)
+			) {
+				squares.push(
+					<div
+						key="celebrity-images"
+						className={`${styles.gridSquare} ${styles.clickable}`}
+						onClick={() =>
+							imageResults?.celebrity &&
+							setActiveModal("celebrity-images")
+						}
+					>
+						{renderImageSquare("celebrity") || (
+							<div
+								className={`${styles.loadingSquare} ${styles.image}`}
+								data-loading-text="Loading celebrity images..."
+							/>
+						)}
+					</div>
+				);
+			}
 
-		// Add product images if available
-		if (imageResults?.product?.length > 0) {
-			squares.push(
-				<div
-					key="product-images"
-					className={`${styles.gridSquare} ${styles.clickable}`}
-					onClick={() => setActiveModal("product-images")}
-				>
-					{renderImageSquare("product")}
-				</div>
-			);
+			// Add product image square if there's a product mention
+			if (
+				latestBatch.mentions?.some(
+					(m) => m.type.toLowerCase() === "product"
+				)
+			) {
+				squares.push(
+					<div
+						key="product-images"
+						className={`${styles.gridSquare} ${styles.clickable}`}
+						onClick={() =>
+							imageResults?.product &&
+							setActiveModal("product-images")
+						}
+					>
+						{renderImageSquare("product") || (
+							<div
+								className={`${styles.loadingSquare} ${styles.image}`}
+								data-loading-text="Loading product images..."
+							/>
+						)}
+					</div>
+				);
+			}
 		}
 
 		// Fill remaining squares (up to 6 total)
