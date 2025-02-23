@@ -473,7 +473,7 @@ export default function ResultsGrid({
 		// Fill remaining squares (up to 6 total)
 		const emptySquaresNeeded = 6 - squares.length;
 		for (let i = 0; i < emptySquaresNeeded; i++) {
-			const squareNumber = squares.length + i + 1;
+			const squareNumber = squares.length + 1;
 			squares.push(
 				<div
 					key={`empty-${i}`}

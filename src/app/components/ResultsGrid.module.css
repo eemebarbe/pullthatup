@@ -735,3 +735,12 @@
 	font-weight: bold;
 	z-index: 1;
 }
+
+/* Add styles for fullscreen square numbers */
+.fullscreenGrid .squareNumber {
+	width: 20px;
+	height: 20px;
+	font-size: 12px;
+	top: 6px;
+	right: 6px;
+}

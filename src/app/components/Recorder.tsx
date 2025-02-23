@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 
 const RecorderClient = dynamic(() => import("./RecorderClient"), {
-  ssr: false,
+	ssr: false,
 });
 
 export default function Recorder(props) {
-  return <RecorderClient {...props} />;
+	return <RecorderClient {...props} />;
 }
