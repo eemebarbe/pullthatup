@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./ResultsGrid.module.css";
 import Modal from "./Modal";
 
-export default function ResultsGrid({ latestBatch }) {
+export default function ResultsGrid({
+	latestBatch,
+	isRecording,
+	onRecordingToggle,
+}) {
 	const [videoData, setVideoData] = useState(null);
 	const [activeModal, setActiveModal] = useState(null);
 	const [isFullscreen, setIsFullscreen] = useState(false);
@@ -13,6 +17,9 @@ export default function ResultsGrid({ latestBatch }) {
 	const [isSearchLoading, setIsSearchLoading] = useState(false);
 	const [imageResults, setImageResults] = useState(null);
 	const [isImageLoading, setIsImageLoading] = useState(false);
+
+	// Add a ref to track previous batch
+	const previousBatchRef = useRef(null);
 
 	useEffect(() => {
 		const fetchVideoData = async (query) => {
@@ -107,6 +114,21 @@ export default function ResultsGrid({ latestBatch }) {
 					fetchImageResults(productMention.searchQuery, "product");
 				}
 			}
+		}
+	}, [latestBatch]);
+
+	// Add useEffect to detect batch changes
+	useEffect(() => {
+		if (latestBatch && latestBatch !== previousBatchRef.current) {
+			// Reset animations by removing and re-adding animate class
+			const squares = document.querySelectorAll(`.${styles.gridSquare}`);
+			squares.forEach((square, index) => {
+				square.classList.remove(styles.animate);
+				// Force reflow
+				void square.offsetWidth;
+				square.classList.add(styles.animate);
+			});
+			previousBatchRef.current = latestBatch;
 		}
 	}, [latestBatch]);
 
@@ -328,7 +350,7 @@ export default function ResultsGrid({ latestBatch }) {
 				squares.push(
 					<div
 						key="factCheck"
-						className={`${styles.gridSquare} ${styles.clickable}`}
+						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() => setActiveModal("factCheck")}
 					>
 						<div className={styles.factCheckSquare}>
@@ -359,12 +381,12 @@ export default function ResultsGrid({ latestBatch }) {
 				squares.push(
 					<div
 						key="video"
-						className={`${styles.gridSquare} ${styles.clickable}`}
+						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() => videoData && setActiveModal("video")}
 					>
 						{renderVideoSquare() || (
 							<div
-								className={`${styles.loadingSquare} ${styles.video}`}
+								className={`${styles.loadingSquare} ${styles.video} ${styles.animate}`}
 								data-loading-text="Loading video..."
 							/>
 						)}
@@ -377,14 +399,14 @@ export default function ResultsGrid({ latestBatch }) {
 				squares.push(
 					<div
 						key="search"
-						className={`${styles.gridSquare} ${styles.clickable}`}
+						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() =>
 							searchResults && setActiveModal("search")
 						}
 					>
 						{renderSearchSquare() || (
 							<div
-								className={`${styles.loadingSquare} ${styles.search}`}
+								className={`${styles.loadingSquare} ${styles.search} ${styles.animate}`}
 								data-loading-text="Loading search results..."
 							/>
 						)}
@@ -401,7 +423,7 @@ export default function ResultsGrid({ latestBatch }) {
 				squares.push(
 					<div
 						key="celebrity-images"
-						className={`${styles.gridSquare} ${styles.clickable}`}
+						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() =>
 							imageResults?.celebrity &&
 							setActiveModal("celebrity-images")
@@ -409,7 +431,7 @@ export default function ResultsGrid({ latestBatch }) {
 					>
 						{renderImageSquare("celebrity") || (
 							<div
-								className={`${styles.loadingSquare} ${styles.image}`}
+								className={`${styles.loadingSquare} ${styles.image} ${styles.animate}`}
 								data-loading-text="Loading celebrity images..."
 							/>
 						)}
@@ -426,7 +448,7 @@ export default function ResultsGrid({ latestBatch }) {
 				squares.push(
 					<div
 						key="product-images"
-						className={`${styles.gridSquare} ${styles.clickable}`}
+						className={`${styles.gridSquare} ${styles.clickable} ${styles.animate}`}
 						onClick={() =>
 							imageResults?.product &&
 							setActiveModal("product-images")
@@ -434,7 +456,7 @@ export default function ResultsGrid({ latestBatch }) {
 					>
 						{renderImageSquare("product") || (
 							<div
-								className={`${styles.loadingSquare} ${styles.image}`}
+								className={`${styles.loadingSquare} ${styles.image} ${styles.animate}`}
 								data-loading-text="Loading product images..."
 							/>
 						)}
@@ -447,7 +469,10 @@ export default function ResultsGrid({ latestBatch }) {
 		const emptySquaresNeeded = 6 - squares.length;
 		for (let i = 0; i < emptySquaresNeeded; i++) {
 			squares.push(
-				<div key={`empty-${i}`} className={styles.gridSquare}></div>
+				<div
+					key={`empty-${i}`}
+					className={`${styles.gridSquare} ${styles.animate}`}
+				/>
 			);
 		}
 
@@ -486,23 +511,34 @@ export default function ResultsGrid({ latestBatch }) {
 
 			{isFullscreen && (
 				<div className={styles.fullscreenOverlay}>
-					<button
-						className={styles.exitFullscreenButton}
-						onClick={() => setIsFullscreen(false)}
-					>
-						<svg
-							className={styles.collapseIcon}
-							viewBox="0 0 24 24"
-							width="24"
-							height="24"
+					<div className={styles.fullscreenControls}>
+						<button
+							className={`${styles.recordingButton} ${
+								isRecording ? styles.recording : ""
+							}`}
+							onClick={() => onRecordingToggle(!isRecording)}
 						>
-							<path
-								fill="currentColor"
-								d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
-							/>
-						</svg>
-						Exit Fullscreen
-					</button>
+							<div className={styles.recordingIcon} />
+							{isRecording ? "Stop Recording" : "Start Recording"}
+						</button>
+						<button
+							className={styles.exitFullscreenButton}
+							onClick={() => setIsFullscreen(false)}
+						>
+							<svg
+								className={styles.collapseIcon}
+								viewBox="0 0 24 24"
+								width="24"
+								height="24"
+							>
+								<path
+									fill="currentColor"
+									d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
+								/>
+							</svg>
+							Exit Fullscreen
+						</button>
+					</div>
 					<div className={styles.fullscreenGrid}>
 						{renderGridSquares()}
 					</div>

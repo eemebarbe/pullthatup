@@ -462,7 +462,11 @@ export default function VoiceRecorder() {
 					</div>
 				</div>
 			) : (
-				<ResultsGrid latestBatch={transcriptPairs[0]} />
+				<ResultsGrid
+					latestBatch={transcriptPairs[0]}
+					isRecording={isRecording}
+					onRecordingToggle={setIsRecording}
+				/>
 			)}
 		</div>
 	);
