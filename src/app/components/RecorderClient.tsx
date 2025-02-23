@@ -39,7 +39,6 @@ export default function RecorderClient({
 	useEffect(() => {
 		// Stream results one by one
 		if (results.length > resultsStreamed.length) {
-			console.log("New results:", results);
 			const newResults = results.slice(resultsStreamed.length);
 			setResultsStreamed([...resultsStreamed, ...newResults]);
 			onTranscript(

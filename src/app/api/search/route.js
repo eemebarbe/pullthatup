@@ -50,7 +50,6 @@ export async function GET(request) {
 		const data = await searchWeb(query);
 
 		// Log the response for debugging
-		console.log("Search API response:", data);
 
 		// Make sure we're returning the expected format
 		return new Response(

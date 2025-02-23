@@ -13,7 +13,7 @@
 }
 
 .modal {
-	background: white;
+	background: var(--surface);
 	padding: 2rem;
 	border-radius: 12px;
 	width: 90%;
@@ -32,7 +32,7 @@
 	border: none;
 	font-size: 1.5rem;
 	cursor: pointer;
-	color: #666;
+	color: var(--text-tertiary);
 	padding: 0.5rem;
 	line-height: 1;
 	border-radius: 50%;
@@ -44,8 +44,12 @@
 }
 
 .closeButton:hover {
-	background-color: #f3f4f6;
-	color: #111;
+	background-color: color-mix(
+		in srgb,
+		var(--surface) 95%,
+		var(--foreground) 5%
+	);
+	color: var(--text-primary);
 }
 
 @keyframes fadeIn {

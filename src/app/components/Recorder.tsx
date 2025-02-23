@@ -6,6 +6,22 @@ const RecorderClient = dynamic(() => import("./RecorderClient"), {
 	ssr: false,
 });
 
-export default function Recorder(props) {
-	return <RecorderClient {...props} />;
+interface RecorderProps {
+	onTranscript: (text: string) => void;
+	setIsRecording: (isRecording: boolean) => void;
+	isRecording: boolean;
+	triggerWord: string;
+}
+
+export default function Recorder({
+	onTranscript,
+	setIsRecording,
+	isRecording,
+	triggerWord,
+}: RecorderProps) {
+	return (
+		<RecorderClient
+			{...{ onTranscript, setIsRecording, isRecording, triggerWord }}
+		/>
+	);
 }

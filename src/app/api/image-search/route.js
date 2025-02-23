@@ -36,7 +36,6 @@ export async function GET(request) {
 		const data = await searchImages(query);
 
 		// Log the response for debugging
-		console.log("Image Search API response:", data);
 
 		// Return only the image results
 		return new Response(

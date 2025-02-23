@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./VoiceRecorder.module.css";
 import ResultsGrid from "./ResultsGrid";
 import Recorder from "./Recorder";
+
+interface RequestIntent {
+	type: "open_modal" | "close_modal" | "more_info" | null;
+	gridNumber?: number;
+	topic?: string;
+}
 
 export default function VoiceRecorder() {
 	const [isRecording, setIsRecording] = useState(false);
@@ -12,12 +18,30 @@ export default function VoiceRecorder() {
 	const [processedText, setProcessedText] = useState(new Set()); // Track processed text
 	const [pendingBatches, setPendingBatches] = useState([]); // New state for batches waiting to be processed
 	const [error, setError] = useState("");
+	const [triggerWord, setTriggerWord] = useState("jamie");
 	const WORD_BATCH_SIZE = 15;
 	const [activeTab, setActiveTab] = useState("transcript");
+	const [isProcessingCommand, setIsProcessingCommand] = useState(false);
 
-	const summarizeText = async (text) => {
+	const summarizeText = async (text: string) => {
 		try {
-			const response = await fetch("/api/summarize", {
+			// Get content analysis
+			const summaryResponse = await fetch("/api/summarize", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					text,
+					triggerWord,
+					recentBatches: transcriptPairs
+						.slice(0, 5)
+						.map((p) => p.transcript),
+				}),
+			});
+
+			// Get fact check
+			const factCheckResponse = await fetch("/api/fact-check", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -25,48 +49,36 @@ export default function VoiceRecorder() {
 				body: JSON.stringify({ text }),
 			});
 
-			// Check if response is JSON
-			const contentType = response.headers.get("content-type");
-			if (!contentType || !contentType.includes("application/json")) {
-				throw new Error("Server returned non-JSON response");
-			}
+			const summaryData = await summaryResponse.json();
+			const factCheckData = await factCheckResponse.json();
 
-			const data = await response.json();
-			console.log("API Response:", data); // Debug log
-
-			if (!response.ok) {
-				throw new Error(data.error || "Failed to process text");
-			}
-
-			// Ensure categories is an array
-			const categories = Array.isArray(data.categories)
-				? data.categories
-				: [];
-			console.log("Processed categories:", categories); // Debug log
-
+			// Combine the responses
 			return {
-				factCheck: data.factCheck || {
-					factCheck: false,
-					text: "No claims to verify.",
-				},
-				categories: categories,
-				mentions: Array.isArray(data.mentions) ? data.mentions : [],
+				...summaryData,
+				...factCheckData,
 			};
 		} catch (error) {
 			console.error("Error processing text:", error);
 			return {
 				factCheck: {
 					factCheck: false,
-					text: "Unable to fact-check this text.",
+					text: "Unable to verify claims at this time.",
 				},
 				categories: [],
 				mentions: [],
+				requestIntent: { type: null },
 			};
 		}
 	};
 
-	const onTranscript = async (text) => {
-		if (text === "") {
+	const onTranscript = async (text: string) => {
+		console.log("📝 Transcript received:", {
+			text,
+			isProcessingCommand,
+			willProcess: !(text === "" || isProcessingCommand),
+		});
+
+		if (text === "" || isProcessingCommand) {
 			return;
 		}
 		setPendingBatches((prev) => [...prev, text]);
@@ -79,7 +91,17 @@ export default function VoiceRecorder() {
 			const batchPromises = pendingBatches.map(async (text) => {
 				if (!processedText.has(text)) {
 					setProcessedText((prev) => new Set(prev).add(text));
-					return await summarizeText(text);
+					const result = await summarizeText(text);
+					// Add logging here
+					console.log("🔍 Summarizer Response:", {
+						text,
+						result,
+						factCheck: result.factCheck,
+						categories: result.categories,
+						mentions: result.mentions,
+						requestIntent: result.requestIntent,
+					});
+					return result;
 				}
 				return null;
 			});
@@ -102,6 +124,7 @@ export default function VoiceRecorder() {
 							factCheck: result.factCheck,
 							categories: result.categories,
 							mentions: result.mentions,
+							requestIntent: result.requestIntent,
 						})),
 						...prev,
 					]);
@@ -125,15 +148,35 @@ export default function VoiceRecorder() {
 		setIsRecording(typeof newState === "boolean" ? newState : !isRecording);
 	};
 
+	// Add function to clear request intent
+	const clearRequestIntent = () => {
+		if (transcriptPairs[0]?.requestIntent) {
+			setTranscriptPairs((prev) => [
+				{ ...prev[0], requestIntent: { type: null } },
+				...prev.slice(1),
+			]);
+		}
+	};
+
 	return (
 		<div className={styles.container}>
 			<div className={styles.headerRow}>
 				<h1 className={styles.title}>Pull That Up</h1>
-				<Recorder
-					onTranscript={onTranscript}
-					setIsRecording={handleRecordingToggle}
-					isRecording={isRecording}
-				/>
+				<div className={styles.recorderControls}>
+					<input
+						type="text"
+						value={triggerWord}
+						onChange={(e) => setTriggerWord(e.target.value)}
+						className={styles.triggerInput}
+						placeholder="Trigger word..."
+					/>
+					<Recorder
+						onTranscript={onTranscript}
+						setIsRecording={handleRecordingToggle}
+						isRecording={isRecording}
+						triggerWord={triggerWord}
+					/>
+				</div>
 			</div>
 
 			{error && <div className={styles.error}>{error}</div>}
@@ -321,6 +364,8 @@ export default function VoiceRecorder() {
 					latestBatch={transcriptPairs[0]}
 					isRecording={isRecording}
 					onRecordingToggle={handleRecordingToggle}
+					transcriptPairs={transcriptPairs}
+					onModalClose={clearRequestIntent}
 				/>
 			)}
 		</div>
